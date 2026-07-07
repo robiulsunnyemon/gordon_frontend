@@ -83,7 +83,7 @@ function Home({ openLoginModal }) {
             <ArrowRight className="h-5 w-5" />
           </button>
           <a 
-            href="http://localhost:3001/exams"
+            href={`${PORTAL_URL}/exams`}
             className="w-full sm:w-auto bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-slate-500 text-slate-200 font-bold py-3.5 px-8 rounded-full transition text-center text-base"
           >
             Take Free Practice Exam
