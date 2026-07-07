@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Link, useNavigate } from 'react
 import { Shield, BookOpen, Key, Server, Check, ArrowRight, X, Mail, User, Info, FileText } from 'lucide-react';
 import axios from 'axios';
 
-const API_BASE = 'http://localhost:8000/api';
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api';
 
 // Shared Layout Component
 function Layout({ children, openLoginModal }) {
