@@ -4,6 +4,7 @@ import { Shield, BookOpen, Key, Server, Check, ArrowRight, X, Mail, User, Info, 
 import axios from 'axios';
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api';
+const PORTAL_URL = import.meta.env.VITE_PORTAL_URL || 'http://localhost:3001';
 
 // Shared Layout Component
 function Layout({ children, openLoginModal }) {
@@ -30,7 +31,7 @@ function Layout({ children, openLoginModal }) {
               Sign In
             </button>
             <a 
-              href="http://localhost:3001" 
+              href={PORTAL_URL} 
               className="border border-slate-700 hover:border-slate-500 text-slate-300 hover:text-white font-bold py-2 px-5 rounded-full transition text-sm"
             >
               Go to Portal
@@ -303,8 +304,8 @@ function LoginModal({ isOpen, onClose }) {
       const res = await axios.post(`${API_BASE}${endpoint}`, { email, password });
       const { access_token, membership_level, email: userEmail } = res.data;
       
-      // Single Sign-On Redirect to Dashboard Project (runs on 3001)
-      window.location.href = `http://localhost:3001/?token=${access_token}&email=${userEmail}&membership=${membership_level}`;
+      // Single Sign-On Redirect to Dashboard Project
+      window.location.href = `${PORTAL_URL}/?token=${access_token}&email=${userEmail}&membership=${membership_level}`;
     } catch (err) {
       setError(err.response?.data?.detail || 'Authentication failed');
     }
@@ -319,7 +320,7 @@ function LoginModal({ isOpen, onClose }) {
     axios.post(`${API_BASE}/auth/google`, { id_token: dummyToken })
       .then(res => {
         const { access_token, membership_level, email: userEmail } = res.data;
-        window.location.href = `http://localhost:3001/?token=${access_token}&email=${userEmail}&membership=${membership_level}`;
+        window.location.href = `${PORTAL_URL}/?token=${access_token}&email=${userEmail}&membership=${membership_level}`;
       })
       .catch(err => {
         setError(err.response?.data?.detail || 'Google Login failed');
@@ -408,7 +409,7 @@ export default function App() {
   const [isLoginOpen, setIsLoginOpen] = useState(false);
 
   return (
-    <Router>
+    <Router basename={import.meta.env.BASE_URL.replace(/\/$/, "")}>
       <Layout openLoginModal={() => setIsLoginOpen(true)}>
         <Routes>
           <Route path="/" element={<Home openLoginModal={() => setIsLoginOpen(true)} />} />
