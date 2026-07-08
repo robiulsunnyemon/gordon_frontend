@@ -180,11 +180,7 @@ function Home({ openLoginModal }) {
   const [courses, setCourses] = useState([]);
   const [activeTab, setActiveTab] = useState('All');
 
-  useEffect(() => {
-    axios.get(`${API_BASE}/courses`)
-      .then(res => setCourses(res.data))
-      .catch(() => {});
-  }, []);
+  const [testimonials, setTestimonials] = useState([]);
 
   const tabs = ['All', 'CCNA', 'CCNP', 'Cybersecurity', 'Automation'];
 
@@ -269,11 +265,15 @@ function Home({ openLoginModal }) {
     },
   ];
 
-  const testimonials = [
-    { name: 'Alex van den Berg', role: 'Network Engineer', company: 'KPN Netherlands', rating: 5, text: 'Passed my CCNA on the first attempt after just 6 weeks of studying on Gordon\'s platform. The practice exam engine is unbeatable.' },
-    { name: 'Sarah Mitchell', role: 'IT Administrator', company: 'Accenture', rating: 5, text: 'The CCNP modules are incredibly detailed. Gordon explains complex routing protocols in a way that actually makes sense.' },
-    { name: 'Michael Okafor', role: 'Network Architect', company: 'Vodafone', rating: 5, text: 'Went from CCNA to CCNP in 8 months. The structured learning path and constant updates make this the best Cisco platform out there.' },
-  ];
+  useEffect(() => {
+    axios.get(`${API_BASE}/courses`)
+      .then(res => setCourses(res.data))
+      .catch(() => {});
+
+    axios.get(`${API_BASE}/testimonials`)
+      .then(res => setTestimonials(res.data))
+      .catch(() => {});
+  }, []);
 
   const filteredCourses = activeTab === 'All' ? courses : courses.filter(c => c.title.toLowerCase().includes(activeTab.toLowerCase()) || c.description?.toLowerCase().includes(activeTab.toLowerCase()));
 
