@@ -1,255 +1,815 @@
-import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Link, useNavigate } from 'react-router-dom';
-import { Shield, BookOpen, Key, Server, Check, ArrowRight, X, Mail, User, Info, FileText } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { BrowserRouter as Router, Routes, Route, Link, useNavigate, useLocation } from 'react-router-dom';
+import { 
+  Shield, Network, Server, BookOpen, Users, Award, ChevronRight, 
+  Star, Check, X, Mail, Lock, Play, Clock, BarChart2, 
+  Wifi, Cpu, Globe, Menu, ArrowUpRight, Zap, Target, ChevronDown
+} from 'lucide-react';
 import axios from 'axios';
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api';
 const PORTAL_URL = import.meta.env.VITE_PORTAL_URL || 'http://localhost:3001';
 
-// Shared Layout Component
+// ============================================================
+// NAVBAR
+// ============================================================
+function Navbar({ openLoginModal }) {
+  const [scrolled, setScrolled] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const location = useLocation();
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 20);
+    window.addEventListener('scroll', onScroll);
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  const navLinks = [
+    { to: '/', label: 'Home' },
+    { to: '/courses', label: 'Courses' },
+    { to: '/pricing', label: 'Pricing' },
+    { to: '/blog', label: 'Blog' },
+    { to: '/about', label: 'About' },
+  ];
+
+  return (
+    <nav className={`navbar fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? 'shadow-2xl shadow-black/40' : ''}`}>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+        {/* Logo */}
+        <Link to="/" className="flex items-center space-x-2.5 group">
+          <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center shadow-lg group-hover:shadow-blue-500/40 transition">
+            <Network className="h-4.5 w-4.5 text-white" strokeWidth={2.5} />
+          </div>
+          <span className="font-display font-800 text-lg tracking-tight text-white">
+            Gordon<span className="text-blue-400">IT</span>
+          </span>
+        </Link>
+
+        {/* Desktop Nav */}
+        <div className="hidden md:flex items-center space-x-1">
+          {navLinks.map(link => (
+            <Link
+              key={link.to}
+              to={link.to}
+              className={`nav-link px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                location.pathname === link.to
+                  ? 'text-white bg-white/5'
+                  : 'text-slate-400 hover:text-white hover:bg-white/5'
+              }`}
+            >
+              {link.label}
+            </Link>
+          ))}
+        </div>
+
+        {/* CTA Buttons */}
+        <div className="hidden md:flex items-center space-x-3">
+          <button onClick={openLoginModal} className="text-slate-300 hover:text-white text-sm font-semibold transition px-3 py-2">
+            Sign In
+          </button>
+          <button
+            onClick={openLoginModal}
+            className="btn-primary text-sm px-5 py-2.5"
+          >
+            Start Free →
+          </button>
+        </div>
+
+        {/* Mobile Menu Button */}
+        <button onClick={() => setMenuOpen(!menuOpen)} className="md:hidden text-slate-400 hover:text-white">
+          <Menu className="h-6 w-6" />
+        </button>
+      </div>
+
+      {/* Mobile Menu */}
+      {menuOpen && (
+        <div className="md:hidden bg-[#0D0E16] border-t border-white/5 px-4 pb-4 pt-2 space-y-1">
+          {navLinks.map(link => (
+            <Link key={link.to} to={link.to} className="block py-2.5 px-3 text-slate-300 hover:text-white text-sm font-medium rounded-lg hover:bg-white/5 transition" onClick={() => setMenuOpen(false)}>
+              {link.label}
+            </Link>
+          ))}
+          <div className="pt-3 space-y-2">
+            <button onClick={() => { openLoginModal(); setMenuOpen(false); }} className="w-full btn-secondary text-sm py-2.5">Sign In</button>
+            <button onClick={() => { openLoginModal(); setMenuOpen(false); }} className="w-full btn-primary text-sm py-2.5">Start Free</button>
+          </div>
+        </div>
+      )}
+    </nav>
+  );
+}
+
+// ============================================================
+// LAYOUT
+// ============================================================
 function Layout({ children, openLoginModal }) {
   return (
-    <div className="min-h-screen bg-slate-950 grid-bg text-slate-100 flex flex-col justify-between">
-      <header className="sticky top-0 z-50 glass-panel border-b border-slate-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <Shield className="h-8 w-8 text-blue-500" />
-            <span className="font-extrabold text-xl tracking-wider text-gradient">GORDON IT ACADEMY</span>
-          </div>
-          <nav className="hidden md:flex space-x-8 text-sm font-semibold text-slate-300">
-            <Link to="/" className="hover:text-blue-400 transition">Home</Link>
-            <Link to="/about" className="hover:text-blue-400 transition">About</Link>
-            <Link to="/pricing" className="hover:text-blue-400 transition">Pricing</Link>
-            <Link to="/blog" className="hover:text-blue-400 transition">Blog</Link>
-            <Link to="/contact" className="hover:text-blue-400 transition">Contact</Link>
-          </nav>
-          <div className="flex items-center space-x-4">
-            <button 
-              onClick={openLoginModal}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-5 rounded-full transition shadow-lg shadow-blue-900/30 text-sm"
-            >
-              Sign In
-            </button>
-            <a 
-              href={PORTAL_URL} 
-              className="border border-slate-700 hover:border-slate-500 text-slate-300 hover:text-white font-bold py-2 px-5 rounded-full transition text-sm"
-            >
-              Go to Portal
-            </a>
-          </div>
-        </div>
-      </header>
-      <main className="flex-grow">{children}</main>
-      <footer className="bg-slate-900 border-t border-slate-800 py-8">
-        <div className="max-w-7xl mx-auto px-4 text-center text-sm text-slate-500 space-y-4">
-          <p>© 2026 Gordon IT Academy. All rights reserved.</p>
-          <p className="text-slate-600">Expert-led training for Cisco CCNA, CCNP, Cybersecurity and IT Careers.</p>
-        </div>
-      </footer>
+    <div className="min-h-screen bg-[#0A0B10] text-slate-100 flex flex-col">
+      <Navbar openLoginModal={openLoginModal} />
+      <main className="flex-grow pt-16">{children}</main>
+      <Footer />
     </div>
   );
 }
 
-// Pages
+// ============================================================
+// FOOTER
+// ============================================================
+function Footer() {
+  const links = {
+    'Courses': ['CCNA 200-301', 'CCNP ENCOR', 'Cybersecurity', 'Network Automation', 'Practice Exams'],
+    'Company': ['About', 'Blog', 'Contact', 'Careers'],
+    'Support': ['FAQ', 'Community', 'Discord', 'Changelog'],
+  };
+
+  return (
+    <footer className="bg-[#07080D] border-t border-white/5 pt-16 pb-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="grid md:grid-cols-5 gap-12 pb-12 border-b border-white/5">
+          {/* Brand */}
+          <div className="md:col-span-2 space-y-4">
+            <div className="flex items-center space-x-2.5">
+              <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
+                <Network className="h-4 w-4 text-white" strokeWidth={2.5} />
+              </div>
+              <span className="font-display font-bold text-lg text-white">
+                Gordon<span className="text-blue-400">IT</span>
+              </span>
+            </div>
+            <p className="text-slate-500 text-sm leading-relaxed max-w-xs">
+              Expert-led Cisco certification training. Pass your CCNA & CCNP exams with structured video courses and hands-on labs.
+            </p>
+            <div className="flex items-center space-x-3 pt-2">
+              {['CCNA', 'CCNP', 'CyberSec'].map(cert => (
+                <span key={cert} className="badge badge-blue">{cert}</span>
+              ))}
+            </div>
+          </div>
+
+          {/* Links */}
+          {Object.entries(links).map(([group, items]) => (
+            <div key={group} className="space-y-4">
+              <h4 className="text-xs font-bold text-slate-400 tracking-wider uppercase">{group}</h4>
+              <ul className="space-y-3">
+                {items.map(item => (
+                  <li key={item}>
+                    <Link to="/" className="text-slate-500 hover:text-slate-200 text-sm transition">{item}</Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+
+        <div className="pt-8 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-slate-600">
+          <p>© 2026 Gordon IT Academy. All rights reserved.</p>
+          <div className="flex items-center space-x-6">
+            <Link to="/" className="hover:text-slate-400 transition">Privacy Policy</Link>
+            <Link to="/" className="hover:text-slate-400 transition">Terms of Service</Link>
+          </div>
+        </div>
+      </div>
+    </footer>
+  );
+}
+
+// ============================================================
+// HOME PAGE
+// ============================================================
 function Home({ openLoginModal }) {
   const [courses, setCourses] = useState([]);
+  const [activeTab, setActiveTab] = useState('All');
 
   useEffect(() => {
     axios.get(`${API_BASE}/courses`)
-      .then(res => setCourses(res.data.slice(0, 3)))
-      .catch(err => console.error(err));
+      .then(res => setCourses(res.data))
+      .catch(() => {});
   }, []);
 
+  const tabs = ['All', 'CCNA', 'CCNP', 'Cybersecurity', 'Automation'];
+
+  const stats = [
+    { number: '5,000+', label: 'Students Trained', icon: Users },
+    { number: '95%', label: 'Exam Pass Rate', icon: Award },
+    { number: '40+', label: 'Video Courses', icon: Play },
+    { number: '500+', label: 'Practice Questions', icon: Target },
+  ];
+
+  const features = [
+    {
+      icon: Network,
+      color: 'from-blue-500/20 to-blue-600/10',
+      iconColor: 'text-blue-400',
+      borderColor: 'border-blue-500/20',
+      title: 'Cisco-Focused Curriculum',
+      desc: 'Every course built specifically for Cisco certifications — CCNA, CCNP, and beyond. No generic content, only exam-relevant material.'
+    },
+    {
+      icon: Target,
+      color: 'from-purple-500/20 to-purple-600/10',
+      iconColor: 'text-purple-400',
+      borderColor: 'border-purple-500/20',
+      title: 'Practice Exam Engine',
+      desc: 'Simulate the real CCNA/CCNP exam environment with 500+ questions, timed sessions, and instant answer explanations.'
+    },
+    {
+      icon: Zap,
+      color: 'from-emerald-500/20 to-emerald-600/10',
+      iconColor: 'text-emerald-400',
+      borderColor: 'border-emerald-500/20',
+      title: 'Expert Cisco Instructor',
+      desc: 'Learn directly from Gordon, a CCIE-certified Cisco instructor with 10+ years of enterprise networking experience.'
+    },
+    {
+      icon: BarChart2,
+      color: 'from-orange-500/20 to-orange-600/10',
+      iconColor: 'text-orange-400',
+      borderColor: 'border-orange-500/20',
+      title: 'Progress Tracking',
+      desc: 'Track lesson completion, exam scores, and certification readiness — all in your personal learning dashboard.'
+    },
+  ];
+
+  const certPaths = [
+    {
+      cert: 'CCNA 200-301',
+      badge: 'Associate',
+      badgeClass: 'badge-green',
+      level: 'Beginner',
+      color: 'from-blue-600/20 to-indigo-600/10',
+      accent: '#3B82F6',
+      desc: 'The #1 entry-level networking certification. Master IP addressing, routing, switching, and basic security.',
+      modules: ['Network Fundamentals', 'IP Connectivity', 'Security Fundamentals', 'Automation'],
+      duration: '60+ hours',
+      questions: '200+',
+    },
+    {
+      cert: 'CCNP ENCOR 350-401',
+      badge: 'Professional',
+      badgeClass: 'badge-blue',
+      level: 'Intermediate',
+      color: 'from-purple-600/20 to-blue-600/10',
+      accent: '#8B5CF6',
+      desc: 'Deep-dive into enterprise network architecture, advanced routing protocols, and network programmability.',
+      modules: ['Advanced Routing', 'SD-Access', 'Network Assurance', 'Infrastructure Security'],
+      duration: '80+ hours',
+      questions: '300+',
+    },
+    {
+      cert: 'Cybersecurity Fundamentals',
+      badge: 'Security',
+      badgeClass: 'badge-orange',
+      level: 'Intermediate',
+      color: 'from-orange-600/20 to-red-600/10',
+      accent: '#F97316',
+      desc: 'Understand network threats, configure firewalls, VPNs, AAA security, and implement Cisco security features.',
+      modules: ['Threat Landscape', 'Cisco Firepower', 'VPN Technologies', 'AAA & NAC'],
+      duration: '40+ hours',
+      questions: '150+',
+    },
+  ];
+
+  const testimonials = [
+    { name: 'Alex van den Berg', role: 'Network Engineer', company: 'KPN Netherlands', rating: 5, text: 'Passed my CCNA on the first attempt after just 6 weeks of studying on Gordon\'s platform. The practice exam engine is unbeatable.' },
+    { name: 'Sarah Mitchell', role: 'IT Administrator', company: 'Accenture', rating: 5, text: 'The CCNP modules are incredibly detailed. Gordon explains complex routing protocols in a way that actually makes sense.' },
+    { name: 'Michael Okafor', role: 'Network Architect', company: 'Vodafone', rating: 5, text: 'Went from CCNA to CCNP in 8 months. The structured learning path and constant updates make this the best Cisco platform out there.' },
+  ];
+
+  const filteredCourses = activeTab === 'All' ? courses : courses.filter(c => c.title.toLowerCase().includes(activeTab.toLowerCase()) || c.description?.toLowerCase().includes(activeTab.toLowerCase()));
+
   return (
-    <div className="space-y-24 py-12">
-      {/* Hero Section */}
-      <section className="max-w-7xl mx-auto px-4 text-center space-y-8">
-        <div className="inline-flex items-center space-x-2 bg-blue-900/40 border border-blue-500/30 px-4 py-1.5 rounded-full text-xs font-semibold text-blue-400">
-          <Server className="h-4 w-4" />
-          <span>New CCNA 200-301 & CCNP Modules Active</span>
-        </div>
-        <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight max-w-4xl mx-auto leading-tight">
-          Master Enterprise Networking & <span className="text-gradient">Cybersecurity</span>
-        </h1>
-        <p className="text-slate-400 text-lg max-w-2xl mx-auto">
-          Pass your CCNA/CCNP exams on the first try. High-quality video lectures, lab download centers, and a comprehensive practice exam engine.
-        </p>
-        <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
-          <button 
-            onClick={openLoginModal}
-            className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 px-8 rounded-full transition flex items-center justify-center space-x-2 text-base shadow-xl shadow-blue-900/40"
-          >
-            <span>Start Learning Now</span>
-            <ArrowRight className="h-5 w-5" />
-          </button>
-          <a 
-            href={`${PORTAL_URL}/exams`}
-            className="w-full sm:w-auto bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-slate-500 text-slate-200 font-bold py-3.5 px-8 rounded-full transition text-center text-base"
-          >
-            Take Free Practice Exam
-          </a>
+    <div>
+      {/* ---- HERO ---- */}
+      <section className="hero-bg dot-grid-bg min-h-screen flex items-center relative overflow-hidden">
+        {/* Floating orbs */}
+        <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-indigo-600/8 rounded-full blur-3xl pointer-events-none" />
+        
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 relative">
+          <div className="max-w-3xl mx-auto text-center space-y-8">
+            {/* Announcement badge */}
+            <div className="inline-flex items-center space-x-2 bg-blue-500/10 border border-blue-500/20 rounded-full px-4 py-1.5 text-sm font-semibold text-blue-400">
+              <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-pulse" />
+              <span>New: CCNP 350-401 ENCOR Course Now Available</span>
+            </div>
+
+            {/* Headline */}
+            <h1 className="font-display text-5xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight leading-tight text-white">
+              Master Cisco.<br />
+              <span className="text-gradient">Get Certified.</span>
+            </h1>
+
+            {/* Sub headline */}
+            <p className="text-slate-400 text-lg sm:text-xl leading-relaxed max-w-2xl mx-auto">
+              Structured CCNA, CCNP, and Cybersecurity video courses by a CCIE-certified instructor. 
+              High-quality labs, practice exams, and everything you need to pass on your first try.
+            </p>
+
+            {/* CTA Buttons */}
+            <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
+              <button
+                onClick={openLoginModal}
+                className="btn-primary flex items-center space-x-2 w-full sm:w-auto justify-center text-base"
+              >
+                <span>Start Learning Free</span>
+                <ChevronRight className="h-4 w-4" />
+              </button>
+              <a
+                href={`${PORTAL_URL}/exams`}
+                className="btn-secondary flex items-center space-x-2 w-full sm:w-auto justify-center text-base"
+              >
+                <Play className="h-4 w-4" />
+                <span>Try Practice Exam</span>
+              </a>
+            </div>
+
+            {/* Social proof */}
+            <div className="flex flex-wrap items-center justify-center gap-6 pt-4">
+              <div className="flex items-center space-x-2 text-slate-400 text-sm">
+                <div className="flex -space-x-2">
+                  {['A', 'B', 'C', 'D'].map((l, i) => (
+                    <div key={l} className="w-7 h-7 rounded-full border-2 border-[#0A0B10] flex items-center justify-center text-[10px] font-bold text-white" style={{ background: ['#3B82F6','#8B5CF6','#10B981','#F59E0B'][i] }}>{l}</div>
+                  ))}
+                </div>
+                <span>5,000+ students enrolled</span>
+              </div>
+              <div className="flex items-center space-x-1.5 text-sm text-slate-400">
+                {[...Array(5)].map((_, i) => <Star key={i} className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />)}
+                <span className="font-semibold text-white">4.9</span>
+                <span>average rating</span>
+              </div>
+              <div className="flex items-center space-x-1.5 text-sm text-slate-400">
+                <Check className="h-4 w-4 text-green-400" />
+                <span>95% first-try pass rate</span>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* Featured Courses */}
-      <section className="max-w-7xl mx-auto px-4 space-y-12">
-        <div className="text-center space-y-4">
-          <h2 className="text-3xl font-extrabold tracking-tight">Our Premium Courses</h2>
-          <p className="text-slate-400 max-w-xl mx-auto">Learn from structured modules covering essential technologies.</p>
+      {/* ---- CERT LOGOS STRIP ---- */}
+      <div className="section-bg-alt py-6 overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4">
+          <p className="text-center text-xs font-bold text-slate-600 tracking-widest uppercase mb-5">
+            Certification Paths Covered
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-6">
+            {['CCNA 200-301', 'CCNP ENCOR 350-401', 'CCNP ENARSI 300-410', 'CyberOps Associate', 'Cisco DevNet', 'Network+'].map(cert => (
+              <span key={cert} className="text-slate-400 text-sm font-semibold border border-slate-800 rounded-full px-4 py-1.5 hover:border-blue-500/40 hover:text-slate-200 transition">
+                {cert}
+              </span>
+            ))}
+          </div>
         </div>
-        <div className="grid md:grid-cols-3 gap-8">
-          {courses.map(course => (
-            <div key={course.id} className="glass-panel glass-panel-hover rounded-3xl overflow-hidden flex flex-col justify-between">
-              <img src={course.thumbnailUrl} alt={course.title} className="w-full h-48 object-cover opacity-80" />
-              <div className="p-6 space-y-4 flex-grow flex flex-col justify-between">
-                <div className="space-y-2">
-                  <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-800 text-blue-400 border border-slate-700">
-                    {course.difficulty}
-                  </span>
-                  <h3 className="text-xl font-bold pt-2">{course.title}</h3>
-                  <p className="text-slate-400 text-sm leading-relaxed">{course.description}</p>
+      </div>
+
+      {/* ---- STATS ---- */}
+      <section className="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+          {stats.map((s, i) => (
+            <div key={i} className="glass-card-static rounded-2xl p-6 text-center space-y-2">
+              <div className="stat-number">{s.number}</div>
+              <p className="text-slate-500 text-sm font-medium">{s.label}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ---- CERTIFICATION PATHS ---- */}
+      <section className="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center space-y-4 mb-14">
+          <span className="badge badge-blue mx-auto">Learning Paths</span>
+          <h2 className="font-display text-4xl font-extrabold text-white">
+            Choose Your Cisco Certification Path
+          </h2>
+          <p className="text-slate-400 max-w-xl mx-auto">
+            Structured from beginner to expert. Each path includes video courses, lab exercises, and a targeted practice exam engine.
+          </p>
+        </div>
+
+        <div className="grid md:grid-cols-3 gap-6">
+          {certPaths.map((path, i) => (
+            <div key={i} className={`course-card bg-gradient-to-b ${path.color} rounded-2xl`}>
+              <div className="card-accent-bar" style={{ background: `linear-gradient(90deg, ${path.accent}, transparent)` }} />
+              <div className="p-7 space-y-5">
+                <div className="flex items-start justify-between">
+                  <div className="space-y-2">
+                    <span className={`badge ${path.badgeClass}`}>{path.badge}</span>
+                    <h3 className="font-display text-xl font-bold text-white leading-tight">{path.cert}</h3>
+                  </div>
+                  <span className="text-xs font-semibold text-slate-500 bg-slate-900/50 px-2 py-1 rounded-lg">{path.level}</span>
                 </div>
-                <button 
+
+                <p className="text-slate-400 text-sm leading-relaxed">{path.desc}</p>
+
+                <div className="space-y-2">
+                  {path.modules.map(mod => (
+                    <div key={mod} className="flex items-center space-x-2 text-sm text-slate-300">
+                      <div className="w-1.5 h-1.5 rounded-full bg-blue-400 flex-shrink-0" />
+                      <span>{mod}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex items-center justify-between text-xs text-slate-500 border-t border-white/5 pt-4">
+                  <div className="flex items-center space-x-1.5"><Clock className="h-3.5 w-3.5" /><span>{path.duration}</span></div>
+                  <div className="flex items-center space-x-1.5"><BookOpen className="h-3.5 w-3.5" /><span>{path.questions} questions</span></div>
+                </div>
+
+                <button
                   onClick={openLoginModal}
-                  className="mt-6 w-full py-3 bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 hover:border-slate-700 rounded-2xl font-bold transition text-sm flex items-center justify-center space-x-2"
+                  className="w-full py-3 rounded-xl font-bold text-sm transition flex items-center justify-center space-x-2"
+                  style={{ background: `${path.accent}20`, color: path.accent, border: `1px solid ${path.accent}30` }}
+                  onMouseOver={e => e.currentTarget.style.background = `${path.accent}30`}
+                  onMouseOut={e => e.currentTarget.style.background = `${path.accent}20`}
                 >
-                  <span>Explore Syllabus</span>
-                  <ArrowRight className="h-4 w-4" />
+                  <span>Explore Path</span>
+                  <ChevronRight className="h-4 w-4" />
                 </button>
               </div>
             </div>
           ))}
         </div>
       </section>
+
+      {/* ---- COURSES FROM API ---- */}
+      {courses.length > 0 && (
+        <section className="py-20 section-bg-alt">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center space-y-4 mb-12">
+              <span className="badge badge-green mx-auto">Live Courses</span>
+              <h2 className="font-display text-4xl font-extrabold text-white">
+                Start Your Journey Today
+              </h2>
+              <p className="text-slate-400 max-w-xl mx-auto">Browse all available courses. Free access to the first lesson of every course.</p>
+            </div>
+
+            {/* Tabs */}
+            <div className="flex items-center justify-center flex-wrap gap-2 mb-10">
+              {tabs.map(tab => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`px-4 py-1.5 text-sm font-semibold transition ${activeTab === tab ? 'tab-active' : 'tab-inactive'}`}
+                >
+                  {tab}
+                </button>
+              ))}
+            </div>
+
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {(filteredCourses.length > 0 ? filteredCourses : courses).slice(0, 6).map(course => (
+                <div key={course.id} className="course-card flex flex-col">
+                  <div className="card-accent-bar" />
+                  <img src={course.thumbnailUrl} alt={course.title} className="w-full h-44 object-cover opacity-80" />
+                  <div className="p-5 flex flex-col flex-grow space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className={`badge ${course.difficulty === 'Advanced' ? 'badge-orange' : course.difficulty === 'Intermediate' ? 'badge-purple' : 'badge-green'}`}>
+                        {course.difficulty}
+                      </span>
+                      <div className="flex items-center space-x-1 text-yellow-400">
+                        <Star className="h-3.5 w-3.5 fill-current" />
+                        <span className="text-xs font-bold text-slate-300">4.9</span>
+                      </div>
+                    </div>
+                    <div className="flex-grow space-y-2">
+                      <h3 className="font-display font-bold text-white text-lg leading-snug">{course.title}</h3>
+                      <p className="text-slate-500 text-sm leading-relaxed line-clamp-2">{course.description}</p>
+                    </div>
+                    <div className="flex items-center justify-between text-xs text-slate-600 border-t border-white/5 pt-3">
+                      <div className="flex items-center space-x-1"><Users className="h-3.5 w-3.5" /><span>Cisco Certified</span></div>
+                      <div className="flex items-center space-x-1"><Play className="h-3.5 w-3.5" /><span>Video + Labs</span></div>
+                    </div>
+                    <button
+                      onClick={openLoginModal}
+                      className="w-full py-2.5 bg-white/5 hover:bg-white/10 border border-white/8 hover:border-blue-500/30 text-slate-300 hover:text-white rounded-xl font-semibold text-sm transition flex items-center justify-center space-x-2"
+                    >
+                      <span>View Course</span>
+                      <ChevronRight className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="text-center mt-10">
+              <button onClick={openLoginModal} className="btn-primary inline-flex items-center space-x-2">
+                <span>View All Courses</span>
+                <ArrowUpRight className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ---- WHY GORDON IT ---- */}
+      <section className="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center space-y-4 mb-14">
+          <span className="badge badge-purple mx-auto">Why Us</span>
+          <h2 className="font-display text-4xl font-extrabold text-white">
+            Built for Cisco Students. By a Cisco Instructor.
+          </h2>
+          <p className="text-slate-400 max-w-2xl mx-auto">
+            Not a generic platform. Every course, question, and lab is hand-crafted by Gordon — a CCIE-certified professional with real enterprise networking experience.
+          </p>
+        </div>
+
+        <div className="grid sm:grid-cols-2 gap-6">
+          {features.map((f, i) => (
+            <div key={i} className={`glass-card rounded-2xl p-7 flex items-start space-x-5 border ${f.borderColor}`} style={{ background: `linear-gradient(135deg, ${f.color})` }}>
+              <div className={`feature-icon bg-gradient-to-br ${f.color} border ${f.borderColor}`}>
+                <f.icon className={`h-5 w-5 ${f.iconColor}`} strokeWidth={1.8} />
+              </div>
+              <div className="space-y-2">
+                <h3 className="font-bold text-white text-lg">{f.title}</h3>
+                <p className="text-slate-400 text-sm leading-relaxed">{f.desc}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ---- INSTRUCTOR SPOTLIGHT ---- */}
+      <section className="py-20 section-bg-alt">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="glass-card rounded-3xl overflow-hidden border border-white/8">
+            <div className="flex flex-col md:flex-row">
+              {/* Instructor Visual */}
+              <div className="md:w-80 bg-gradient-to-br from-blue-600/20 to-indigo-700/10 p-10 flex flex-col items-center justify-center space-y-4 text-center border-b md:border-b-0 md:border-r border-white/5">
+                <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-xl">
+                  <span className="text-3xl font-display font-black text-white">G</span>
+                </div>
+                <div className="space-y-1">
+                  <h3 className="font-display font-bold text-xl text-white">Gordon Mac Donald</h3>
+                  <p className="text-blue-400 text-sm font-semibold">CCIE Certified • Cisco Instructor</p>
+                </div>
+                <div className="flex flex-wrap gap-2 justify-center">
+                  <span className="badge badge-blue">CCNA</span>
+                  <span className="badge badge-purple">CCNP</span>
+                  <span className="badge badge-orange">CCIE</span>
+                </div>
+                <div className="flex items-center space-x-1 text-yellow-400">
+                  {[...Array(5)].map((_, i) => <Star key={i} className="h-4 w-4 fill-current" />)}
+                  <span className="text-slate-300 text-sm ml-1">4.9 / 5.0</span>
+                </div>
+              </div>
+
+              {/* Instructor Info */}
+              <div className="flex-1 p-8 md:p-12 space-y-6">
+                <h2 className="font-display text-3xl font-extrabold text-white">
+                  Learn from a Real <span className="text-gradient">Cisco Professional</span>
+                </h2>
+                <p className="text-slate-400 leading-relaxed">
+                  Gordon is a CCIE-certified networking professional with over 10 years of enterprise networking experience. 
+                  As a Cisco Certified Instructor, he has helped thousands of engineers pass their CCNA and CCNP exams 
+                  through focused, practical, and exam-targeted study material.
+                </p>
+                <div className="grid grid-cols-3 gap-4">
+                  {[{ n: '10+', l: 'Years Experience' }, { n: '5K+', l: 'Students Trained' }, { n: '95%', l: 'Pass Rate' }].map((s, i) => (
+                    <div key={i} className="text-center p-4 rounded-2xl bg-white/3 border border-white/5">
+                      <div className="text-2xl font-display font-black text-blue-400">{s.n}</div>
+                      <div className="text-xs text-slate-500 font-medium mt-1">{s.l}</div>
+                    </div>
+                  ))}
+                </div>
+                <button onClick={openLoginModal} className="btn-primary inline-flex items-center space-x-2">
+                  <span>Start Learning with Gordon</span>
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ---- TESTIMONIALS ---- */}
+      <section className="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center space-y-4 mb-14">
+          <span className="badge badge-green mx-auto">Student Success</span>
+          <h2 className="font-display text-4xl font-extrabold text-white">Certified Engineers Trust Gordon IT</h2>
+          <p className="text-slate-400 max-w-xl mx-auto">Real results from real students who passed their Cisco exams.</p>
+        </div>
+
+        <div className="grid md:grid-cols-3 gap-6">
+          {testimonials.map((t, i) => (
+            <div key={i} className="glass-card rounded-2xl p-7 space-y-5">
+              <div className="flex items-center space-x-1 text-yellow-400">
+                {[...Array(t.rating)].map((_, j) => <Star key={j} className="h-4 w-4 fill-current" />)}
+              </div>
+              <p className="text-slate-300 text-sm leading-relaxed">"{t.text}"</p>
+              <div className="flex items-center space-x-3 pt-2 border-t border-white/5">
+                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-xs font-bold text-white">
+                  {t.name[0]}
+                </div>
+                <div>
+                  <div className="text-sm font-semibold text-white">{t.name}</div>
+                  <div className="text-xs text-slate-500">{t.role} · {t.company}</div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ---- PRICING CTA ---- */}
+      <section className="py-20 section-bg-alt">
+        <div className="max-w-4xl mx-auto px-4 text-center space-y-8">
+          <h2 className="font-display text-4xl font-extrabold text-white">
+            Ready to Get <span className="text-gradient">Cisco Certified?</span>
+          </h2>
+          <p className="text-slate-400 text-lg">
+            Join 5,000+ engineers already learning on Gordon IT. Start for free — no credit card required.
+          </p>
+          <div className="flex flex-col sm:flex-row justify-center gap-4">
+            <button onClick={openLoginModal} className="btn-primary text-base px-8 py-4 flex items-center justify-center space-x-2">
+              <span>Get Started Free</span>
+              <ChevronRight className="h-5 w-5" />
+            </button>
+            <Link to="/pricing" className="btn-secondary text-base px-8 py-4 inline-flex items-center justify-center space-x-2">
+              <span>View Pricing</span>
+            </Link>
+          </div>
+          <div className="flex items-center justify-center space-x-6 text-sm text-slate-500">
+            <div className="flex items-center space-x-1.5"><Check className="h-4 w-4 text-green-400" /><span>Free tier available</span></div>
+            <div className="flex items-center space-x-1.5"><Check className="h-4 w-4 text-green-400" /><span>Cancel anytime</span></div>
+            <div className="flex items-center space-x-1.5"><Check className="h-4 w-4 text-green-400" /><span>Instant access</span></div>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }
 
-function About() {
-  return (
-    <div className="max-w-4xl mx-auto px-4 py-16 space-y-8">
-      <h1 className="text-4xl font-extrabold tracking-tight text-gradient text-center">About Gordon IT Academy</h1>
-      <div className="glass-panel p-8 rounded-3xl space-y-6 text-slate-300 leading-relaxed">
-        <p>
-          Gordon IT Academy was founded by Gordon, a CCIE-certified professional, to deliver direct, effective, and real-world networking training without the typical fluff.
-        </p>
-        <p>
-          Instead of relying on rigid, outdated training platforms, we built a custom web app focused on speed, efficiency, and interactive question banks. Our platform is heavily inspired by industry leaders like KodeKloud, bringing state-of-the-art interactive labs, practice exam portals, and highly structured video lectures to our students.
-        </p>
-      </div>
-    </div>
-  );
-}
-
+// ============================================================
+// PRICING PAGE
+// ============================================================
 function Pricing({ openLoginModal }) {
-  return (
-    <div className="max-w-7xl mx-auto px-4 py-16 space-y-12">
-      <div className="text-center space-y-4">
-        <h1 className="text-4xl font-extrabold tracking-tight">Flexible Membership Plans</h1>
-        <p className="text-slate-400 max-w-xl mx-auto">Get full access to all courses, configuration downloads, and the unlimited Practice Exam Portal.</p>
-      </div>
-      <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-        {/* Monthly Plan */}
-        <div className="glass-panel glass-panel-hover rounded-3xl p-8 flex flex-col justify-between border-slate-800">
-          <div className="space-y-6">
-            <div>
-              <h2 className="text-2xl font-bold">Premium Monthly</h2>
-              <p className="text-slate-500 text-sm mt-1">Best for short-term intense study</p>
-            </div>
-            <div className="flex items-baseline">
-              <span className="text-5xl font-extrabold text-white">$15</span>
-              <span className="text-slate-400 text-lg ml-2">/ month</span>
-            </div>
-            <ul className="space-y-3.5 text-sm text-slate-300">
-              <li className="flex items-center space-x-3">
-                <Check className="h-5 w-5 text-blue-500" />
-                <span>Unlimited Practice Exam Engine</span>
-              </li>
-              <li className="flex items-center space-x-3">
-                <Check className="h-5 w-5 text-blue-500" />
-                <span>All CCNA & CCNP Course Access</span>
-              </li>
-              <li className="flex items-center space-x-3">
-                <Check className="h-5 w-5 text-blue-500" />
-                <span>Download Center (Labs & PDF guides)</span>
-              </li>
-            </ul>
-          </div>
-          <button 
-            onClick={openLoginModal}
-            className="mt-8 w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold transition shadow-lg shadow-blue-900/30"
-          >
-            Upgrade to Premium Monthly
-          </button>
-        </div>
+  const [billing, setBilling] = useState('yearly');
 
-        {/* Yearly Plan */}
-        <div className="glass-panel glass-panel-hover rounded-3xl p-8 flex flex-col justify-between border-blue-500/30 relative">
-          <div className="absolute -top-3.5 right-6 bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-xs font-bold px-3 py-1 rounded-full border border-blue-400 shadow-md">
-            SAVE 33%
-          </div>
-          <div className="space-y-6">
-            <div>
-              <h2 className="text-2xl font-bold text-gradient">Premium Yearly</h2>
-              <p className="text-slate-500 text-sm mt-1">Best value for long-term career growth</p>
-            </div>
-            <div className="flex items-baseline">
-              <span className="text-5xl font-extrabold text-white">$120</span>
-              <span className="text-slate-400 text-lg ml-2">/ year</span>
-            </div>
-            <ul className="space-y-3.5 text-sm text-slate-300">
-              <li className="flex items-center space-x-3">
-                <Check className="h-5 w-5 text-blue-500" />
-                <span>Everything in Monthly Plan</span>
-              </li>
-              <li className="flex items-center space-x-3">
-                <Check className="h-5 w-5 text-blue-500" />
-                <span>Priority email & discord support</span>
-              </li>
-              <li className="flex items-center space-x-3">
-                <Check className="h-5 w-5 text-blue-500" />
-                <span>Free updates to future exams</span>
-              </li>
-            </ul>
-          </div>
-          <button 
-            onClick={openLoginModal}
-            className="mt-8 w-full py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-2xl font-bold transition shadow-lg shadow-indigo-900/30"
-          >
-            Upgrade to Premium Yearly
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function Blog() {
-  const posts = [
-    { id: 1, title: "How to Pass CCNA 200-301 in 30 Days", category: "CCNA", excerpt: "A structured study guide outlining hours required, recommended lab setups, and top exam pitfalls.", date: "July 2026" },
-    { id: 2, title: "Understanding BGP Path Attributes for CCNP", category: "CCNP", excerpt: "An intuitive explanation of Local Preference, MED, Weight, and AS-Path evaluation sequence.", date: "June 2026" },
-    { id: 3, title: "Top 5 Networking Security Rules to Implement Now", category: "Cybersecurity", excerpt: "Configuring port security, AAA authentication, and disabling unused interfaces on Cisco Catalyst switches.", date: "May 2026" }
+  const plans = [
+    {
+      name: 'Free',
+      price: { monthly: 0, yearly: 0 },
+      desc: 'Get started with free preview lessons and limited practice questions.',
+      color: 'border-white/10',
+      cta: 'Start Free',
+      featured: false,
+      features: ['Access to first lesson per course', '40 practice exam questions', 'Progress tracking', 'Community Discord access'],
+    },
+    {
+      name: 'Premium Monthly',
+      price: { monthly: 15, yearly: 15 },
+      desc: 'Full access to all Cisco courses and unlimited practice exams.',
+      color: 'border-blue-500/30',
+      cta: 'Upgrade Now',
+      featured: true,
+      badge: 'Most Popular',
+      features: ['All CCNA, CCNP, Cybersecurity courses', 'Unlimited practice exam questions', 'Download labs & PDF guides', 'Priority instructor support', 'Progress analytics dashboard'],
+    },
+    {
+      name: 'Premium Yearly',
+      price: { monthly: 120, yearly: 120 },
+      desc: 'Best value for serious learners. Save 33% vs monthly billing.',
+      color: 'border-indigo-500/30',
+      cta: 'Get Best Value',
+      featured: false,
+      badge: 'Save 33%',
+      features: ['Everything in Monthly plan', 'Priority email & Discord support', 'Free updates to new exam versions', 'Early access to new courses', 'Certificate of completion'],
+    },
   ];
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-16 space-y-12">
-      <h1 className="text-4xl font-extrabold tracking-tight text-center">Industry Insights & Blog</h1>
-      <div className="grid md:grid-cols-3 gap-8">
-        {posts.map(post => (
-          <div key={post.id} className="glass-panel glass-panel-hover rounded-3xl p-6 flex flex-col justify-between">
-            <div className="space-y-4">
-              <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-800 text-blue-400 border border-slate-700">
-                {post.category}
-              </span>
-              <h2 className="text-xl font-bold pt-2">{post.title}</h2>
-              <p className="text-slate-400 text-sm leading-relaxed">{post.excerpt}</p>
+    <div className="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="text-center space-y-4 mb-16">
+        <span className="badge badge-blue mx-auto">Pricing</span>
+        <h1 className="font-display text-5xl font-extrabold text-white">Simple, Transparent Pricing</h1>
+        <p className="text-slate-400 max-w-xl mx-auto text-lg">
+          Start free. Upgrade when you're ready to unlock all Cisco certification content.
+        </p>
+      </div>
+
+      <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+        {plans.map((plan, i) => (
+          <div key={i} className={`glass-card rounded-3xl p-8 flex flex-col justify-between border relative ${plan.color} ${plan.featured ? 'ring-1 ring-blue-500/40' : ''}`}>
+            {plan.badge && (
+              <div className={`absolute -top-3 right-6 badge ${plan.featured ? 'badge-blue' : 'badge-green'}`}>
+                {plan.badge}
+              </div>
+            )}
+            <div className="space-y-6">
+              <div className="space-y-1">
+                <h2 className={`font-display text-xl font-bold ${plan.featured ? 'text-blue-400' : 'text-white'}`}>{plan.name}</h2>
+                <p className="text-slate-500 text-sm">{plan.desc}</p>
+              </div>
+              <div className="flex items-baseline space-x-1">
+                <span className="font-display text-5xl font-black text-white">${plan.price.yearly}</span>
+                <span className="text-slate-500 text-sm">{plan.price.yearly === 0 ? 'forever' : plan.name.includes('Monthly') ? '/month' : '/year'}</span>
+              </div>
+              <ul className="space-y-3">
+                {plan.features.map((f, j) => (
+                  <li key={j} className="flex items-center space-x-3 text-sm text-slate-300">
+                    <Check className="h-4 w-4 text-green-400 flex-shrink-0" />
+                    <span>{f}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
-            <div className="flex justify-between items-center text-xs text-slate-500 pt-6">
-              <span>{post.date}</span>
-              <button className="text-blue-400 font-bold hover:underline flex items-center space-x-1">
-                <span>Read More</span>
-                <ArrowRight className="h-3.5 w-3.5" />
-              </button>
+            <button
+              onClick={openLoginModal}
+              className={`mt-8 w-full py-3.5 rounded-2xl font-bold text-sm transition ${plan.featured ? 'btn-primary' : 'btn-secondary'}`}
+            >
+              {plan.cta}
+            </button>
+          </div>
+        ))}
+      </div>
+
+      <div className="text-center mt-12 text-sm text-slate-500">
+        <p>All plans include a 7-day refund guarantee. Questions? <Link to="/contact" className="text-blue-400 hover:underline">Contact support</Link></p>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// ABOUT PAGE
+// ============================================================
+function About() {
+  return (
+    <div className="py-20 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-16">
+      <div className="text-center space-y-4">
+        <span className="badge badge-blue mx-auto">About</span>
+        <h1 className="font-display text-5xl font-extrabold text-white">About Gordon IT Academy</h1>
+      </div>
+      <div className="grid md:grid-cols-2 gap-10 items-center">
+        <div className="space-y-6 text-slate-400 leading-relaxed">
+          <p className="text-lg text-slate-300">
+            Gordon IT Academy was founded by Gordon Mac Donald — a CCIE-certified Cisco networking professional — to deliver structured, practical, and exam-focused IT training.
+          </p>
+          <p>
+            Unlike generic e-learning platforms, every course on this platform is hand-crafted by Gordon himself. The focus is entirely on Cisco certifications: CCNA, CCNP, and Cybersecurity — because that's what IT professionals need to advance in their careers.
+          </p>
+          <p>
+            The platform features high-quality video lectures, downloadable lab exercises, and a comprehensive practice exam engine. Everything you need to pass your Cisco exam on the first try.
+          </p>
+        </div>
+        <div className="glass-card rounded-3xl p-8 space-y-6">
+          {[
+            { icon: Award, label: 'Cisco CCIE Certified', sub: 'Enterprise Infrastructure' },
+            { icon: Users, label: '5,000+ Students Trained', sub: 'Across 50+ countries' },
+            { icon: Target, label: '95% First-Attempt Pass Rate', sub: 'CCNA & CCNP combined' },
+            { icon: BookOpen, label: '40+ Video Courses', sub: 'With hands-on labs' },
+          ].map((item, i) => (
+            <div key={i} className="flex items-center space-x-4">
+              <div className="feature-icon">
+                <item.icon className="h-5 w-5 text-blue-400" />
+              </div>
+              <div>
+                <div className="font-semibold text-white text-sm">{item.label}</div>
+                <div className="text-xs text-slate-500">{item.sub}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// BLOG PAGE
+// ============================================================
+function Blog() {
+  const posts = [
+    { id: 1, title: 'How to Pass CCNA 200-301 in 30 Days', category: 'CCNA', categoryClass: 'badge-green', excerpt: 'A structured study plan covering hours required, lab setup, common exam pitfalls, and the most efficient way to memorize subnetting.', date: 'July 2026', readTime: '8 min read' },
+    { id: 2, title: 'Understanding BGP Path Attributes for CCNP ENCOR', category: 'CCNP', categoryClass: 'badge-blue', excerpt: 'An intuitive deep-dive into Local Preference, MED, Weight, and AS-Path evaluation sequence with real-world configuration examples.', date: 'June 2026', readTime: '12 min read' },
+    { id: 3, title: 'Top 5 Cisco Security Configurations You Must Know', category: 'Cybersecurity', categoryClass: 'badge-orange', excerpt: 'Port security, AAA with RADIUS, ZBFW, and disabling unused interfaces — the most tested security topics on current Cisco exams.', date: 'May 2026', readTime: '10 min read' },
+  ];
+
+  return (
+    <div className="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
+      <div className="text-center space-y-4">
+        <span className="badge badge-purple mx-auto">Blog</span>
+        <h1 className="font-display text-5xl font-extrabold text-white">Networking Insights & Study Guides</h1>
+        <p className="text-slate-400 max-w-xl mx-auto">Expert articles from Gordon on Cisco certifications, networking concepts, and career advice.</p>
+      </div>
+      <div className="grid md:grid-cols-3 gap-6">
+        {posts.map(post => (
+          <div key={post.id} className="glass-card rounded-2xl overflow-hidden flex flex-col">
+            <div className="card-accent-bar" />
+            <div className="p-7 flex flex-col flex-grow space-y-4">
+              <div className="flex items-center justify-between">
+                <span className={`badge ${post.categoryClass}`}>{post.category}</span>
+                <span className="text-xs text-slate-600">{post.readTime}</span>
+              </div>
+              <h2 className="font-display font-bold text-white text-xl leading-snug">{post.title}</h2>
+              <p className="text-slate-400 text-sm leading-relaxed flex-grow">{post.excerpt}</p>
+              <div className="flex items-center justify-between text-xs text-slate-600 border-t border-white/5 pt-4">
+                <span>{post.date}</span>
+                <button className="text-blue-400 font-semibold hover:underline flex items-center space-x-1">
+                  <span>Read More</span><ChevronRight className="h-3.5 w-3.5" />
+                </button>
+              </div>
             </div>
           </div>
         ))}
@@ -258,130 +818,146 @@ function Blog() {
   );
 }
 
+// ============================================================
+// CONTACT PAGE
+// ============================================================
 function Contact() {
   return (
-    <div className="max-w-xl mx-auto px-4 py-16 space-y-8">
-      <h1 className="text-4xl font-extrabold tracking-tight text-gradient text-center">Contact Support</h1>
-      <form onSubmit={(e) => { e.preventDefault(); alert("Message sent successfully!"); }} className="glass-panel p-8 rounded-3xl space-y-6">
-        <div className="space-y-2">
-          <label className="text-sm font-semibold text-slate-300">Your Email</label>
-          <input type="email" required className="w-full bg-slate-900 border border-slate-800 focus:border-blue-500 rounded-xl px-4 py-3 text-slate-100 outline-none transition text-sm" />
-        </div>
-        <div className="space-y-2">
-          <label className="text-sm font-semibold text-slate-300">Message Topic</label>
-          <select className="w-full bg-slate-900 border border-slate-800 focus:border-blue-500 rounded-xl px-4 py-3 text-slate-100 outline-none transition text-sm">
-            <option>General Question</option>
-            <option>Billing Support</option>
-            <option>Course & Lab Help</option>
-          </select>
-        </div>
-        <div className="space-y-2">
-          <label className="text-sm font-semibold text-slate-300">Message</label>
-          <textarea rows="4" required className="w-full bg-slate-900 border border-slate-800 focus:border-blue-500 rounded-xl px-4 py-3 text-slate-100 outline-none transition text-sm resize-none"></textarea>
-        </div>
-        <button type="submit" className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition">
-          Send Message
-        </button>
-      </form>
+    <div className="py-20 max-w-2xl mx-auto px-4 sm:px-6 space-y-12">
+      <div className="text-center space-y-4">
+        <span className="badge badge-green mx-auto">Contact</span>
+        <h1 className="font-display text-5xl font-extrabold text-white">Get In Touch</h1>
+        <p className="text-slate-400">Have a question about a course or need support? We usually respond within 24 hours.</p>
+      </div>
+
+      <div className="glass-card rounded-3xl p-8 space-y-6">
+        <form onSubmit={(e) => { e.preventDefault(); alert('Message sent! We\'ll respond within 24 hours.'); }} className="space-y-5">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-400">First Name</label>
+              <input type="text" required className="w-full bg-white/5 border border-white/8 focus:border-blue-500/60 rounded-xl px-4 py-3 text-slate-100 outline-none transition text-sm placeholder-slate-600" placeholder="Alex" />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-400">Last Name</label>
+              <input type="text" required className="w-full bg-white/5 border border-white/8 focus:border-blue-500/60 rounded-xl px-4 py-3 text-slate-100 outline-none transition text-sm placeholder-slate-600" placeholder="Johnson" />
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-slate-400">Email Address</label>
+            <input type="email" required className="w-full bg-white/5 border border-white/8 focus:border-blue-500/60 rounded-xl px-4 py-3 text-slate-100 outline-none transition text-sm placeholder-slate-600" placeholder="you@example.com" />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-slate-400">Topic</label>
+            <select className="w-full bg-white/5 border border-white/8 focus:border-blue-500/60 rounded-xl px-4 py-3 text-slate-100 outline-none transition text-sm">
+              <option>General Question</option>
+              <option>Course Content Help</option>
+              <option>Billing & Subscription</option>
+              <option>Technical Issue</option>
+            </select>
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-slate-400">Message</label>
+            <textarea rows="4" required className="w-full bg-white/5 border border-white/8 focus:border-blue-500/60 rounded-xl px-4 py-3 text-slate-100 outline-none transition text-sm resize-none placeholder-slate-600" placeholder="Describe your question or issue..."></textarea>
+          </div>
+          <button type="submit" className="btn-primary w-full justify-center text-sm">Send Message</button>
+        </form>
+      </div>
     </div>
   );
 }
 
-// Authentication Modal Component
+// ============================================================
+// LOGIN MODAL
+// ============================================================
 function LoginModal({ isOpen, onClose }) {
   const [isRegister, setIsRegister] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   if (!isOpen) return null;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    const endpoint = isRegister ? '/auth/register' : '/auth/login';
+    setLoading(true);
     try {
+      const endpoint = isRegister ? '/auth/register' : '/auth/login';
       const res = await axios.post(`${API_BASE}${endpoint}`, { email, password });
       const { access_token, membership_level, email: userEmail } = res.data;
-      
-      // Single Sign-On Redirect to Dashboard Project
       window.location.href = `${PORTAL_URL}/?token=${access_token}&email=${userEmail}&membership=${membership_level}`;
     } catch (err) {
-      setError(err.response?.data?.detail || 'Authentication failed');
+      setError(err.response?.data?.detail || 'Authentication failed. Please try again.');
+      setLoading(false);
     }
   };
 
-  const handleGoogleLogin = () => {
-    // Generate dummy google token for testing SSO login flow
-    const dummyEmail = email || 'dummygoogleuser@example.com';
-    const dummyGoogleId = 'googleid1234567890';
-    const dummyToken = `dummy_google_${dummyEmail}_${dummyGoogleId}`;
-    
-    axios.post(`${API_BASE}/auth/google`, { id_token: dummyToken })
-      .then(res => {
-        const { access_token, membership_level, email: userEmail } = res.data;
-        window.location.href = `${PORTAL_URL}/?token=${access_token}&email=${userEmail}&membership=${membership_level}`;
-      })
-      .catch(err => {
-        setError(err.response?.data?.detail || 'Google Login failed');
-      });
-  };
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="glass-panel w-full max-w-md rounded-3xl p-8 relative space-y-6">
-        <button onClick={onClose} className="absolute top-4 right-4 text-slate-500 hover:text-slate-300">
-          <X className="h-6 w-6" />
+    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="glass-card w-full max-w-md rounded-3xl p-8 relative space-y-6 border border-white/10">
+        <button onClick={onClose} className="absolute top-4 right-4 text-slate-500 hover:text-slate-300 transition">
+          <X className="h-5 w-5" />
         </button>
 
+        {/* Header */}
         <div className="text-center space-y-2">
-          <h2 className="text-2xl font-bold">{isRegister ? 'Create Account' : 'Welcome Back'}</h2>
-          <p className="text-sm text-slate-400">{isRegister ? 'Register for free access to courses & quizzes' : 'Login to access your learning portal'}</p>
+          <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl mx-auto flex items-center justify-center mb-3">
+            <Network className="h-6 w-6 text-white" />
+          </div>
+          <h2 className="font-display text-2xl font-bold text-white">
+            {isRegister ? 'Create Account' : 'Welcome Back'}
+          </h2>
+          <p className="text-sm text-slate-400">
+            {isRegister ? 'Join 5,000+ students learning Cisco skills' : 'Sign in to your Gordon IT portal'}
+          </p>
         </div>
 
-        {error && <div className="bg-red-900/30 border border-red-500/50 text-red-400 text-xs px-4 py-2 rounded-xl text-center">{error}</div>}
+        {error && (
+          <div className="bg-red-500/10 border border-red-500/30 text-red-400 text-xs px-4 py-3 rounded-xl text-center">
+            {error}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-1">
-            <label className="text-xs font-semibold text-slate-400 flex items-center space-x-2">
-              <Mail className="h-3.5 w-3.5" />
-              <span>Email Address</span>
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-slate-400 flex items-center space-x-1.5">
+              <Mail className="h-3.5 w-3.5" /><span>Email Address</span>
             </label>
-            <input 
-              type="email" 
-              required 
-              value={email}
+            <input
+              type="email" required value={email}
               onChange={e => setEmail(e.target.value)}
-              className="w-full bg-slate-900 border border-slate-800 focus:border-blue-500 rounded-xl px-4 py-3 text-slate-100 outline-none transition text-sm" 
+              className="w-full bg-white/5 border border-white/8 focus:border-blue-500/60 rounded-xl px-4 py-3 text-white outline-none transition text-sm placeholder-slate-600"
+              placeholder="you@example.com"
             />
           </div>
-          <div className="space-y-1">
-            <label className="text-xs font-semibold text-slate-400 flex items-center space-x-2">
-              <Key className="h-3.5 w-3.5" />
-              <span>Password</span>
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-slate-400 flex items-center space-x-1.5">
+              <Lock className="h-3.5 w-3.5" /><span>Password</span>
             </label>
-            <input 
-              type="password" 
-              required 
-              value={password}
+            <input
+              type="password" required value={password}
               onChange={e => setPassword(e.target.value)}
-              className="w-full bg-slate-900 border border-slate-800 focus:border-blue-500 rounded-xl px-4 py-3 text-slate-100 outline-none transition text-sm" 
+              className="w-full bg-white/5 border border-white/8 focus:border-blue-500/60 rounded-xl px-4 py-3 text-white outline-none transition text-sm placeholder-slate-600"
+              placeholder="••••••••"
             />
           </div>
-          <button type="submit" className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition text-sm mt-4">
-            {isRegister ? 'Sign Up' : 'Sign In'}
+          <button type="submit" disabled={loading} className="btn-primary w-full justify-center text-sm mt-2 disabled:opacity-60 disabled:cursor-not-allowed">
+            {loading ? 'Please wait...' : isRegister ? 'Create Account' : 'Sign In to Portal'}
           </button>
         </form>
 
-        <div className="relative flex py-2 items-center">
-          <div className="flex-grow border-t border-slate-800"></div>
-          <span className="flex-shrink mx-4 text-slate-500 text-xs font-bold">OR</span>
-          <div className="flex-grow border-t border-slate-800"></div>
+        <div className="relative flex py-1 items-center">
+          <div className="flex-grow border-t border-white/6" />
+          <span className="mx-4 text-slate-600 text-xs font-bold">OR</span>
+          <div className="flex-grow border-t border-white/6" />
         </div>
 
-        <button 
-          onClick={handleGoogleLogin}
-          className="w-full py-3 bg-white hover:bg-slate-100 text-slate-900 rounded-xl font-bold transition text-sm flex items-center justify-center space-x-2"
+        <button
+          onClick={() => {
+            setError('Google login is in setup mode. Please use email & password.');
+          }}
+          className="w-full py-3 bg-white hover:bg-slate-50 text-slate-800 rounded-xl font-bold text-sm flex items-center justify-center space-x-2 transition"
         >
           <svg className="h-4 w-4" viewBox="0 0 24 24">
             <path fill="#EA4335" d="M12 5.04c1.62 0 3.08.56 4.22 1.65l3.15-3.15C17.45 1.68 14.93 1 12 1 7.35 1 3.4 3.65 1.5 7.5l3.6 2.8C6.05 7.34 8.78 5.04 12 5.04z" />
@@ -389,15 +965,12 @@ function LoginModal({ isOpen, onClose }) {
             <path fill="#FBBC05" d="M5.1 14.7c-.23-.69-.36-1.43-.36-2.2s.13-1.51.36-2.2L1.5 7.5C.54 9.4 0 11.64 0 14s.54 4.6 1.5 6.5l3.6-2.8z" />
             <path fill="#34A853" d="M12 23c3.24 0 5.97-1.07 7.96-2.9l-3.6-2.8c-1.1.74-2.52 1.18-4.36 1.18-3.22 0-5.95-2.3-6.9-5.46l-3.6 2.8C3.4 20.35 7.35 23 12 23z" />
           </svg>
-          <span>Continue with Google (Dummy Setup)</span>
+          <span>Continue with Google</span>
         </button>
 
-        <div className="text-center pt-2">
-          <button 
-            onClick={() => setIsRegister(!isRegister)}
-            className="text-xs text-blue-400 hover:underline"
-          >
-            {isRegister ? 'Already have an account? Sign In' : "Don't have an account? Sign Up"}
+        <div className="text-center">
+          <button onClick={() => { setIsRegister(!isRegister); setError(''); }} className="text-xs text-blue-400 hover:underline">
+            {isRegister ? 'Already have an account? Sign In' : "Don't have an account? Sign Up Free"}
           </button>
         </div>
       </div>
@@ -405,14 +978,18 @@ function LoginModal({ isOpen, onClose }) {
   );
 }
 
+// ============================================================
+// APP ROOT
+// ============================================================
 export default function App() {
   const [isLoginOpen, setIsLoginOpen] = useState(false);
 
   return (
-    <Router basename={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+    <Router basename={import.meta.env.BASE_URL.replace(/\/$/, '')}>
       <Layout openLoginModal={() => setIsLoginOpen(true)}>
         <Routes>
           <Route path="/" element={<Home openLoginModal={() => setIsLoginOpen(true)} />} />
+          <Route path="/courses" element={<Home openLoginModal={() => setIsLoginOpen(true)} />} />
           <Route path="/about" element={<About />} />
           <Route path="/pricing" element={<Pricing openLoginModal={() => setIsLoginOpen(true)} />} />
           <Route path="/blog" element={<Blog />} />
