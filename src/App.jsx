@@ -731,45 +731,88 @@ function Pricing({ openLoginModal }) {
   );
 }
 
-// ============================================================
-// ABOUT PAGE
-// ============================================================
 function About() {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    axios.get(`${API_BASE}/about`)
+      .then(res => {
+        setData(res.data);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, []);
+
+  const iconMap = {
+    Award: Award,
+    Users: Users,
+    Target: Target,
+    BookOpen: BookOpen
+  };
+
+  if (loading) {
+    return (
+      <div className="py-20 max-w-6xl mx-auto px-4 text-center space-y-8 animate-pulse">
+        <div className="h-8 bg-slate-900 w-48 mx-auto rounded-full" />
+        <div className="h-12 bg-slate-900 w-96 mx-auto rounded-2xl" />
+        <div className="grid md:grid-cols-2 gap-10">
+          <div className="space-y-4">
+            <div className="h-6 bg-slate-900 rounded-xl" />
+            <div className="h-6 bg-slate-900 rounded-xl" />
+            <div className="h-6 bg-slate-900 rounded-xl" />
+          </div>
+          <div className="h-64 bg-slate-900 rounded-3xl" />
+        </div>
+      </div>
+    );
+  }
+
+  const aboutData = data || {
+    title: "About Gordon IT Academy",
+    subTitle: "About",
+    paragraphs: [
+      "Gordon IT Academy was founded by Gordon Mac Donald — a CCIE-certified Cisco networking professional — to deliver structured, practical, and exam-focused IT training.",
+      "Unlike generic e-learning platforms, every course on this platform is hand-crafted by Gordon himself. The focus is entirely on Cisco certifications: CCNA, CCNP, and Cybersecurity — because that's what IT professionals need to advance in their careers.",
+      "The platform features high-quality video lectures, downloadable lab exercises, and a comprehensive practice exam engine. Everything you need to pass your Cisco exam on the first try."
+    ],
+    stats: [
+      { icon: 'Award', label: 'Cisco CCIE Certified', sub: 'Enterprise Infrastructure' },
+      { icon: 'Users', label: '5,000+ Students Trained', sub: 'Across 50+ countries' },
+      { icon: 'Target', label: '95% First-Attempt Pass Rate', sub: 'CCNA & CCNP combined' },
+      { icon: 'BookOpen', label: '40+ Video Courses', sub: 'With hands-on labs' }
+    ]
+  };
+
   return (
     <div className="py-20 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-16">
       <div className="text-center space-y-4">
-        <span className="badge badge-blue mx-auto">About</span>
-        <h1 className="font-display text-5xl font-extrabold text-white">About Gordon IT Academy</h1>
+        <span className="badge badge-blue mx-auto">{aboutData.subTitle}</span>
+        <h1 className="font-display text-5xl font-extrabold text-white">{aboutData.title}</h1>
       </div>
       <div className="grid md:grid-cols-2 gap-10 items-center">
         <div className="space-y-6 text-slate-400 leading-relaxed">
-          <p className="text-lg text-slate-300">
-            Gordon IT Academy was founded by Gordon Mac Donald — a CCIE-certified Cisco networking professional — to deliver structured, practical, and exam-focused IT training.
-          </p>
-          <p>
-            Unlike generic e-learning platforms, every course on this platform is hand-crafted by Gordon himself. The focus is entirely on Cisco certifications: CCNA, CCNP, and Cybersecurity — because that's what IT professionals need to advance in their careers.
-          </p>
-          <p>
-            The platform features high-quality video lectures, downloadable lab exercises, and a comprehensive practice exam engine. Everything you need to pass your Cisco exam on the first try.
-          </p>
+          {(aboutData.paragraphs || []).map((para, idx) => (
+            <p key={idx} className={idx === 0 ? "text-lg text-slate-300" : ""}>
+              {para}
+            </p>
+          ))}
         </div>
         <div className="glass-card rounded-3xl p-8 space-y-6">
-          {[
-            { icon: Award, label: 'Cisco CCIE Certified', sub: 'Enterprise Infrastructure' },
-            { icon: Users, label: '5,000+ Students Trained', sub: 'Across 50+ countries' },
-            { icon: Target, label: '95% First-Attempt Pass Rate', sub: 'CCNA & CCNP combined' },
-            { icon: BookOpen, label: '40+ Video Courses', sub: 'With hands-on labs' },
-          ].map((item, i) => (
-            <div key={i} className="flex items-center space-x-4">
-              <div className="feature-icon">
-                <item.icon className="h-5 w-5 text-blue-400" />
+          {(aboutData.stats || []).map((item, i) => {
+            const IconComponent = iconMap[item.icon] || Award;
+            return (
+              <div key={i} className="flex items-center space-x-4">
+                <div className="feature-icon">
+                  <IconComponent className="h-5 w-5 text-blue-400" />
+                </div>
+                <div>
+                  <div className="font-semibold text-white text-sm">{item.label}</div>
+                  <div className="text-xs text-slate-500">{item.sub}</div>
+                </div>
               </div>
-              <div>
-                <div className="font-semibold text-white text-sm">{item.label}</div>
-                <div className="text-xs text-slate-500">{item.sub}</div>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>
