@@ -644,39 +644,35 @@ function Home({ openLoginModal }) {
 // PRICING PAGE
 // ============================================================
 function Pricing({ openLoginModal }) {
-  const [billing, setBilling] = useState('yearly');
+  const [plans, setPlans] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const plans = [
-    {
-      name: 'Free',
-      price: { monthly: 0, yearly: 0 },
-      desc: 'Get started with free preview lessons and limited practice questions.',
-      color: 'border-white/10',
-      cta: 'Start Free',
-      featured: false,
-      features: ['Access to first lesson per course', '40 practice exam questions', 'Progress tracking', 'Community Discord access'],
-    },
-    {
-      name: 'Premium Monthly',
-      price: { monthly: 15, yearly: 15 },
-      desc: 'Full access to all Cisco courses and unlimited practice exams.',
-      color: 'border-blue-500/30',
-      cta: 'Upgrade Now',
-      featured: true,
-      badge: 'Most Popular',
-      features: ['All CCNA, CCNP, Cybersecurity courses', 'Unlimited practice exam questions', 'Download labs & PDF guides', 'Priority instructor support', 'Progress analytics dashboard'],
-    },
-    {
-      name: 'Premium Yearly',
-      price: { monthly: 120, yearly: 120 },
-      desc: 'Best value for serious learners. Save 33% vs monthly billing.',
-      color: 'border-indigo-500/30',
-      cta: 'Get Best Value',
-      featured: false,
-      badge: 'Save 33%',
-      features: ['Everything in Monthly plan', 'Priority email & Discord support', 'Free updates to new exam versions', 'Early access to new courses', 'Certificate of completion'],
-    },
-  ];
+  useEffect(() => {
+    axios.get(`${API_BASE}/subscriptions`)
+      .then(res => {
+        setPlans(res.data);
+        setLoading(false);
+      })
+      .catch(() => {
+        setLoading(false);
+      });
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-16 animate-pulse">
+        <div className="space-y-4">
+          <div className="h-8 bg-slate-900 w-24 mx-auto rounded-full" />
+          <div className="h-12 bg-slate-900 w-96 mx-auto rounded-2xl" />
+        </div>
+        <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="glass-card rounded-3xl h-96 bg-slate-900/50" />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -690,7 +686,14 @@ function Pricing({ openLoginModal }) {
 
       <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
         {plans.map((plan, i) => (
-          <div key={i} className={`glass-card rounded-3xl p-8 flex flex-col justify-between border relative ${plan.color} ${plan.featured ? 'ring-1 ring-blue-500/40' : ''}`}>
+          <div 
+            key={i} 
+            className={`glass-card rounded-3xl p-8 flex flex-col justify-between border relative ${
+              plan.featured 
+                ? 'border-blue-500/40 ring-1 ring-blue-500/40' 
+                : 'border-white/10'
+            }`}
+          >
             {plan.badge && (
               <div className={`absolute -top-3 right-6 badge ${plan.featured ? 'badge-blue' : 'badge-green'}`}>
                 {plan.badge}
@@ -699,14 +702,16 @@ function Pricing({ openLoginModal }) {
             <div className="space-y-6">
               <div className="space-y-1">
                 <h2 className={`font-display text-xl font-bold ${plan.featured ? 'text-blue-400' : 'text-white'}`}>{plan.name}</h2>
-                <p className="text-slate-500 text-sm">{plan.desc}</p>
+                <p className="text-slate-500 text-sm">{plan.description}</p>
               </div>
               <div className="flex items-baseline space-x-1">
-                <span className="font-display text-5xl font-black text-white">${plan.price.yearly}</span>
-                <span className="text-slate-500 text-sm">{plan.price.yearly === 0 ? 'forever' : plan.name.includes('Monthly') ? '/month' : '/year'}</span>
+                <span className="font-display text-5xl font-black text-white">${plan.price}</span>
+                <span className="text-slate-500 text-sm">
+                  {plan.price === 0 ? 'forever' : `/${plan.billingPeriod}`}
+                </span>
               </div>
               <ul className="space-y-3">
-                {plan.features.map((f, j) => (
+                {(plan.features || []).map((f, j) => (
                   <li key={j} className="flex items-center space-x-3 text-sm text-slate-300">
                     <Check className="h-4 w-4 text-green-400 flex-shrink-0" />
                     <span>{f}</span>
