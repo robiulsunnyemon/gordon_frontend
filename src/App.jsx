@@ -6,8 +6,9 @@ import {
   Wifi, Cpu, Globe, Menu, ArrowUpRight, Zap, Target, ChevronDown
 } from 'lucide-react';
 import axios from 'axios';
+import InterviewPrep from './components/InterviewPrep';
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api';
+export const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api';
 const PORTAL_URL = import.meta.env.VITE_PORTAL_URL || 'http://localhost:3001';
 
 // ============================================================
@@ -29,6 +30,7 @@ function Navbar({ openLoginModal }) {
     { to: '/courses', label: 'Courses' },
     { to: '/pricing', label: 'Pricing' },
     { to: '/blog', label: 'Blog' },
+    { to: '/interview-prep', label: 'Interview Prep' },
     { to: '/about', label: 'About' },
   ];
 
@@ -1277,6 +1279,7 @@ export default function App() {
           <Route path="/about" element={<About />} />
           <Route path="/pricing" element={<Pricing openLoginModal={() => setIsLoginOpen(true)} />} />
           <Route path="/blog" element={<Blog />} />
+          <Route path="/interview-prep" element={<InterviewPrep />} />
           <Route path="/contact" element={<Contact />} />
         </Routes>
         <LoginModal isOpen={isLoginOpen} onClose={() => setIsLoginOpen(false)} />
