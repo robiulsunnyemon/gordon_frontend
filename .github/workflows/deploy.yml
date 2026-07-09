@@ -13,7 +13,6 @@ jobs:
     runs-on: ubuntu-latest
     env:
       VITE_API_BASE: https://api.gordon.maktechapp.cloud/api
-      VITE_PORTAL_URL: https://robiulsunnyemon.github.io/gordon_dashboard
     steps:
       - name: Checkout 🛎️
         uses: actions/checkout@v4
@@ -22,6 +21,7 @@ jobs:
         run: |
           npm install
           npm run build
+          cp dist/index.html dist/404.html
 
       - name: Deploy 🚀
         uses: JamesIves/github-pages-deploy-action@v4
