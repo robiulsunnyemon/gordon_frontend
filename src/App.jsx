@@ -7,8 +7,8 @@ import {
 } from 'lucide-react';
 import axios from 'axios';
 
-export const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api';
-const PORTAL_URL = import.meta.env.VITE_PORTAL_URL || 'http://localhost:3001';
+export const API_BASE = import.meta.env.VITE_API_BASE;
+const PORTAL_URL = import.meta.env.VITE_PORTAL_URL;
 
 // ============================================================
 // NAVBAR
